@@ -1,5 +1,5 @@
 #!/home/layne/miniconda3/bin/python
-#pylint: disable=
+# Main hand-tracking → gimbal control script
 
 import os
 import subprocess
@@ -10,6 +10,8 @@ import cv2
 import mediapipe as mp
 import serial
 
+# ---- CONFIG ----
+
 CAMERA_NAME = "Arducam OV2311 USB Camera"
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "hand_landmarker.task")
 
@@ -19,32 +21,43 @@ SERIAL_BAUD = 115200
 PAN_ID = 1
 TILT_ID = 2
 
+# Proportional control gains
 KP_PAN = 0.025
 KP_TILT = 0.025
+
+# Ignore tiny movements (reduces jitter)
 DEADBAND_PX = 12
+
+# How often to send motor updates
 UPDATE_INTERVAL_SEC = 0.05
 
-MAX_PAN_DEG = 90.0
-MAX_TILT_DEG = 80.0
+# Mechanical limits
+MAX_PAN_DEG = 180.0
+MAX_TILT_DEG = 85.0
 
+# Axis direction correction
 PAN_SIGN = 1.0
 TILT_SIGN = -1.0
 
+# Manual calibration delay
 MANUAL_CALIBRATION_WINDOW_SEC = 10.0
 
-# Hold box: if the palm is inside this box, hold position.
+# Hold zone (no movement if hand is inside)
 BOX_WIDTH = 220
 BOX_HEIGHT = 160
 
-# Center zone: once recentering starts, keep moving until the palm reaches this zone.
+# Stop recentering once inside this tighter zone
 CENTER_TOLERANCE_PX = 25
 
+
+# ---- UTILS ----
 
 def clamp(x, lo, hi):
     return max(lo, min(hi, x))
 
 
 def get_camera_node():
+    # Find camera device path using v4l2
     try:
         out = subprocess.check_output(["v4l2-ctl", "--list-devices"], text=True)
         lines = out.splitlines()
@@ -60,6 +73,7 @@ def get_camera_node():
     except Exception:
         pass
 
+    # fallback guesses
     for node in ["/dev/video2", "/dev/video3", "/dev/video0", "/dev/video1"]:
         if os.path.exists(node):
             return node
@@ -68,10 +82,12 @@ def get_camera_node():
 
 
 def send_cmd(ser, cmd):
+    # Send a single command to firmware
     ser.write((cmd + "\n").encode("utf-8"))
 
 
 def drain_serial(ser, seconds=0.25):
+    # Clear any unread serial data
     end_time = time.time() + seconds
     while time.time() < end_time:
         try:
@@ -88,7 +104,10 @@ def drain_serial(ser, seconds=0.25):
             time.sleep(0.01)
 
 
+# ---- CALIBRATION ----
+
 def setup_motors_with_manual_calibration_window(ser):
+    # Disable torque so user can position gimbal manually
     time.sleep(2.0)
     drain_serial(ser)
 
@@ -97,15 +116,10 @@ def setup_motors_with_manual_calibration_window(ser):
     time.sleep(0.2)
     drain_serial(ser)
 
-    print()
-    print("====================================================")
-    print("MANUAL CALIBRATION WINDOW")
-    print("Torque is OFF.")
-    print("Move the gimbal by hand to the desired zero position.")
-    print(f"You have {int(MANUAL_CALIBRATION_WINDOW_SEC)} seconds...")
-    print("====================================================")
-    print()
+    print("\n=== MANUAL CALIBRATION WINDOW ===")
+    print("Move gimbal to desired zero position.")
 
+    # countdown timer
     end_time = time.time() + MANUAL_CALIBRATION_WINDOW_SEC
     last_shown = None
 
@@ -123,163 +137,121 @@ def setup_motors_with_manual_calibration_window(ser):
 
         time.sleep(0.05)
 
+    # Capture zero position
     send_cmd(ser, f"c {PAN_ID}")
     send_cmd(ser, f"c {TILT_ID}")
     time.sleep(0.2)
 
+    # Enable torque and go to zero
     send_cmd(ser, f"e {PAN_ID}")
     send_cmd(ser, f"e {TILT_ID}")
     time.sleep(0.1)
     send_cmd(ser, f"p {PAN_ID} 0")
     send_cmd(ser, f"p {TILT_ID} 0")
-    time.sleep(0.2)
+
     drain_serial(ser)
 
-    print()
-    print("Calibration captured.")
-    print("Tracking is now active.")
-    print()
+    print("Calibration captured. Tracking active.\n")
 
+
+# ---- MOTION ----
 
 def send_positions(ser, pan_deg, tilt_deg):
+    # Send target angles to firmware
     send_cmd(ser, f"p {PAN_ID} {pan_deg:.2f}")
     send_cmd(ser, f"p {TILT_ID} {tilt_deg:.2f}")
 
 
+# ---- VISION ----
+
 def get_palm_center_px(landmarks, w, h):
+    # Average key palm points
     palm_ids = [0, 5, 9, 13, 17]
     avg_x = sum(landmarks[i].x for i in palm_ids) / len(palm_ids)
     avg_y = sum(landmarks[i].y for i in palm_ids) / len(palm_ids)
-    tx = int(avg_x * w)
-    ty = int(avg_y * h)
-    return tx, ty
+    return int(avg_x * w), int(avg_y * h)
 
 
 def draw_hand(frame, landmarks):
+    # Draw hand skeleton + palm center
     h, w, _ = frame.shape
 
     connections = [
-        (0, 1), (1, 2), (2, 3), (3, 4),
-        (0, 5), (5, 6), (6, 7), (7, 8),
-        (5, 9), (9, 10), (10, 11), (11, 12),
-        (9, 13), (13, 14), (14, 15), (15, 16),
-        (13, 17), (17, 18), (18, 19), (19, 20),
-        (0, 17),
+        (0,1),(1,2),(2,3),(3,4),
+        (0,5),(5,6),(6,7),(7,8),
+        (5,9),(9,10),(10,11),(11,12),
+        (9,13),(13,14),(14,15),(15,16),
+        (13,17),(17,18),(18,19),(19,20),
+        (0,17),
     ]
 
     for lm in landmarks:
         x = int(lm.x * w)
         y = int(lm.y * h)
-        cv2.circle(frame, (x, y), 3, (0, 255, 0), -1)
+        cv2.circle(frame, (x, y), 3, (0,255,0), -1)
 
     for a, b in connections:
         x1 = int(landmarks[a].x * w)
         y1 = int(landmarks[a].y * h)
         x2 = int(landmarks[b].x * w)
         y2 = int(landmarks[b].y * h)
-        cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+        cv2.line(frame, (x1,y1),(x2,y2),(255,0,0),2)
 
     tx, ty = get_palm_center_px(landmarks, w, h)
 
-    cv2.circle(frame, (tx, ty), 8, (0, 255, 255), -1)
-    cv2.putText(
-        frame,
-        "Palm Center",
-        (tx + 10, ty - 10),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.5,
-        (0, 255, 255),
-        1,
-        cv2.LINE_AA,
-    )
+    cv2.circle(frame, (tx, ty), 8, (0,255,255), -1)
 
     return tx, ty
 
 
-def draw_tracking_ui(frame, center_x, center_y, box_width, box_height):
-    half_w = box_width // 2
-    half_h = box_height // 2
+def draw_tracking_ui(frame, cx, cy, bw, bh):
+    # Draw center crosshair + hold box
+    half_w = bw // 2
+    half_h = bh // 2
 
-    left = center_x - half_w
-    right = center_x + half_w
-    top = center_y - half_h
-    bottom = center_y + half_h
+    left = cx - half_w
+    right = cx + half_w
+    top = cy - half_h
+    bottom = cy + half_h
 
-    cv2.circle(frame, (center_x, center_y), 6, (0, 255, 0), -1)
-    cv2.line(frame, (center_x - 20, center_y), (center_x + 20, center_y), (0, 255, 0), 2)
-    cv2.line(frame, (center_x, center_y - 20), (center_x, center_y + 20), (0, 255, 0), 2)
-
-    cv2.rectangle(frame, (left, top), (right, bottom), (255, 255, 0), 2)
-    cv2.putText(
-        frame,
-        "Hold Box",
-        (left, top - 10),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
-        (255, 255, 0),
-        2,
-        cv2.LINE_AA,
-    )
-
-#    c_left = center_x - CENTER_TOLERANCE_PX
-#    c_right = center_x + CENTER_TOLERANCE_PX
-#    c_top = center_y - CENTER_TOLERANCE_PX
-#    c_bottom = center_y + CENTER_TOLERANCE_PX
-#
-#    cv2.rectangle(frame, (c_left, c_top), (c_right, c_bottom), (0, 165, 255), 2)
-#    cv2.putText(
-#        frame,
-#        "Center Zone",
-#        (c_left, c_bottom + 20),
-#        cv2.FONT_HERSHEY_SIMPLEX,
-#        0.5,
-#        (0, 165, 255),
-#        1,
-#        cv2.LINE_AA,
-#    )
+    cv2.circle(frame, (cx, cy), 6, (0,255,0), -1)
+    cv2.rectangle(frame, (left, top), (right, bottom), (255,255,0), 2)
 
     return left, right, top, bottom
 
 
-def main():
-    if not os.path.exists(MODEL_PATH):
-        sys.exit(f"Model not found: {MODEL_PATH}")
+# ---- MAIN LOOP ----
 
+def main():
+    # Validate model
+    if not os.path.exists(MODEL_PATH):
+        sys.exit("Model not found")
+
+    # Find camera
     video_node = get_camera_node()
     if not video_node:
-        sys.exit("Could not find camera.")
+        sys.exit("Camera not found")
 
+    # Open serial
     try:
         ser = serial.Serial(SERIAL_PORT, SERIAL_BAUD, timeout=0.05)
     except Exception as exc:
-        sys.exit(f"Could not open serial port {SERIAL_PORT}: {exc}")
+        sys.exit(f"Serial error: {exc}")
 
     cap = None
 
     try:
+        # Manual calibration phase
         setup_motors_with_manual_calibration_window(ser)
 
+        # Open camera
         cap = cv2.VideoCapture(video_node, cv2.CAP_V4L2)
-        if not cap.isOpened():
-            sys.exit(f"Failed to open {video_node}")
 
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        cap.set(cv2.CAP_PROP_FPS, 50)
-
-        BaseOptions = mp.tasks.BaseOptions
-        HandLandmarkerOptions = mp.tasks.vision.HandLandmarkerOptions
-        VisionRunningMode = mp.tasks.vision.RunningMode
-
-        options = HandLandmarkerOptions(
-            base_options=BaseOptions(model_asset_path=MODEL_PATH),
-            running_mode=VisionRunningMode.VIDEO,
+        # Setup mediapipe
+        options = mp.tasks.vision.HandLandmarkerOptions(
+            base_options=mp.tasks.BaseOptions(model_asset_path=MODEL_PATH),
+            running_mode=mp.tasks.vision.RunningMode.VIDEO,
             num_hands=1,
-            min_hand_detection_confidence=0.5,
-            min_hand_presence_confidence=0.5,
-            min_tracking_confidence=0.5,
         )
 
         desired_pan_deg = 0.0
@@ -295,64 +267,40 @@ def main():
 
                 frame = cv2.flip(frame, 1)
 
+                # Run hand detection
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-                timestamp_ms = int(time.time() * 1000)
-                result = landmarker.detect_for_video(mp_image, timestamp_ms)
+                result = landmarker.detect_for_video(mp_image, int(time.time()*1000))
 
                 h, w, _ = frame.shape
-                center_x = w // 2
-                center_y = h // 2
+                cx, cy = w // 2, h // 2
 
-                left, right, top, bottom = draw_tracking_ui(
-                    frame, center_x, center_y, BOX_WIDTH, BOX_HEIGHT
-                )
+                left, right, top, bottom = draw_tracking_ui(frame, cx, cy, BOX_WIDTH, BOX_HEIGHT)
 
                 if result.hand_landmarks:
-                    hand_landmarks = result.hand_landmarks[0]
-                    target_x, target_y = draw_hand(frame, hand_landmarks)
+                    # Get target position
+                    target_x, target_y = draw_hand(frame, result.hand_landmarks[0])
 
-                    cv2.line(frame, (center_x, center_y), (target_x, target_y), (0, 255, 255), 2)
+                    error_x = target_x - cx
+                    error_y = target_y - cy
 
-                    raw_error_x = target_x - center_x
-                    raw_error_y = target_y - center_y
+                    # HOLD vs RECENTER logic
+                    inside = (left <= target_x <= right and top <= target_y <= bottom)
 
-                    inside_hold_box = (left <= target_x <= right and top <= target_y <= bottom)
-                    centered_now = (
-                        abs(raw_error_x) <= CENTER_TOLERANCE_PX
-                        and abs(raw_error_y) <= CENTER_TOLERANCE_PX
-                    )
-
-                    if not recenter_active:
-                        if inside_hold_box:
-                            error_x = 0
-                            error_y = 0
-                            status_text = "HOLD"
-                            status_color = (0, 255, 0)
-                        else:
-                            recenter_active = True
-                            error_x = raw_error_x
-                            error_y = raw_error_y
-                            status_text = "RECENTER"
-                            status_color = (0, 165, 255)
+                    if inside:
+                        error_x = 0
+                        error_y = 0
+                        recenter_active = False
                     else:
-                        if centered_now:
-                            recenter_active = False
-                            error_x = 0
-                            error_y = 0
-                            status_text = "HOLD"
-                            status_color = (0, 255, 0)
-                        else:
-                            error_x = raw_error_x
-                            error_y = raw_error_y
-                            status_text = "RECENTER"
-                            status_color = (0, 165, 255)
+                        recenter_active = True
 
+                    # Deadband
                     if abs(error_x) <= DEADBAND_PX:
                         error_x = 0
                     if abs(error_y) <= DEADBAND_PX:
                         error_y = 0
 
+                    # Update motors
                     now = time.time()
                     if now - last_update_time >= UPDATE_INTERVAL_SEC:
                         desired_pan_deg += PAN_SIGN * KP_PAN * error_x
@@ -364,65 +312,27 @@ def main():
                         send_positions(ser, desired_pan_deg, desired_tilt_deg)
                         last_update_time = now
 
-                    cv2.putText(
-                        frame,
-                        status_text,
-                        (20, 40),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        1.0,
-                        status_color,
-                        2,
-                        cv2.LINE_AA,
-                    )
-
-                    cv2.putText(
-                        frame,
-                        f"err_x={raw_error_x} err_y={raw_error_y}",
-                        (20, 75),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.7,
-                        (255, 255, 255),
-                        2,
-                        cv2.LINE_AA,
-                    )
-
-                    cv2.putText(
-                        frame,
-                        f"pan={desired_pan_deg:.1f} tilt={desired_tilt_deg:.1f}",
-                        (20, 105),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.7,
-                        (255, 255, 255),
-                        2,
-                        cv2.LINE_AA,
-                    )
                 else:
                     recenter_active = False
-                    cv2.putText(
-                        frame,
-                        "NO HAND DETECTED",
-                        (20, 40),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        1.0,
-                        (0, 0, 255),
-                        2,
-                        cv2.LINE_AA,
-                    )
 
+                # Display
                 cv2.imshow("Hand Tracking Follow", frame)
+
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q") or key == 27:
                     break
 
     finally:
+        # Safe shutdown
         try:
             send_cmd(ser, f"p {PAN_ID} 0")
             send_cmd(ser, f"p {TILT_ID} 0")
         except Exception:
             pass
 
-        if cap is not None:
+        if cap:
             cap.release()
+
         cv2.destroyAllWindows()
         ser.close()
 
