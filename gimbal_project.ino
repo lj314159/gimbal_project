@@ -6,6 +6,12 @@ static constexpr int DXL_DIR_PIN = -1;
 
 GimbalController gimbal(PAN_ID, TILT_ID, DXL_DIR_PIN, Serial1);
 
-void setup() { gimbal.init(); }
+void setup()
+{
+  gimbal.init();
+}
 
-void loop() { gimbal.update(); }
+void loop()
+{
+  gimbal.update();
+}

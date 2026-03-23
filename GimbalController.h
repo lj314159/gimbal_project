@@ -3,7 +3,17 @@
 #include <Arduino.h>
 #include <Dynamixel2Arduino.h>
 
-class GimbalController {
+enum class GimbalState
+{
+  STARTUP,
+  WAITING_FOR_CALIBRATION,
+  READY,
+  RUNNING_TEST,
+  ERROR_STATE
+};
+
+class GimbalController
+{
 public:
   GimbalController(uint8_t panId, uint8_t tiltId, int dirPin,
                    HardwareSerial &dxlSerial);
@@ -30,8 +40,20 @@ private:
 
   String m_buffer;
 
+  GimbalState m_state;
+  unsigned long m_stateStartMs;
+
+  int m_testStep;
+  unsigned long m_testStepStartMs;
+
   void handleSerial();
   void processCommand(String line);
+
+  void setState(GimbalState newState);
+  const char *stateName() const;
+  bool isFullyCalibrated() const;
+  void updateStateMachine();
+  void updateTestSequence();
 
   void enableTorque(uint8_t id);
   void disableTorque(uint8_t id);
@@ -39,7 +61,7 @@ private:
   void move(uint8_t id, float deg);
   void moveBoth(float pan, float tilt);
   void statusAll();
-  void runTest();
+  void startTest();
 
   int32_t degToTicks(float deg);
 };
