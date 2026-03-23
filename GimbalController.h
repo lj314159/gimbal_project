@@ -59,7 +59,7 @@ private:
   void processCommand(String line); // Parses and executes a command
 
   void setState(GimbalState newState); // Transition to new state
-  const char *stateName() const;       // Human-readable state string
+  const char *stateName() const;       // Return current statename
   bool isFullyCalibrated() const;      // True if both axes calibrated
 
   void updateStateMachine(); // Runs state-dependent behavior

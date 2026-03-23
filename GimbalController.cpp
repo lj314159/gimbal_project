@@ -74,7 +74,6 @@ void GimbalController::setState(GimbalState newState)
   }
 
   m_state = newState;
-  // millis: returns arduino milliseconds
   m_stateStartMs = millis();
 
   Serial.print("STATE -> ");
@@ -189,7 +188,16 @@ void GimbalController::processCommand(String line)
   }
 
   int firstSpace = line.indexOf(' ');
-  String cmd = (firstSpace == -1) ? line : line.substring(0, firstSpace);
+  String cmd;
+
+  if(firstSpace == -1)
+  {
+    cmd = line;
+  }
+  else
+  {
+    cmd = line.substring(0, firstSpace);
+  }
 
   if(cmd == "e" || cmd == "d" || cmd == "c" || cmd == "s")
   {
@@ -231,9 +239,23 @@ void GimbalController::processCommand(String line)
         Serial.print(" zero=");
         Serial.print(m_zeroPan);
         Serial.print(" calibrated=");
-        Serial.print(m_panCal ? "YES" : "NO");
+        if(m_panCal)
+        {
+          Serial.print("YES");
+        }
+        else
+        {
+          Serial.print("NO");
+        }
         Serial.print(" torque=");
-        Serial.print(m_panTorque ? "ON" : "OFF");
+        if(m_panTorque)
+        {
+          Serial.print("ON");
+        }
+        else
+        {
+          Serial.print("OFF");
+        }
         Serial.print(" state=");
         Serial.println(stateName());
       }
@@ -242,9 +264,23 @@ void GimbalController::processCommand(String line)
         Serial.print(" zero=");
         Serial.print(m_zeroTilt);
         Serial.print(" calibrated=");
-        Serial.print(m_tiltCal ? "YES" : "NO");
+        if(m_tiltCal)
+        {
+          Serial.print("YES");
+        }
+        else
+        {
+          Serial.print("NO");
+        }
         Serial.print(" torque=");
-        Serial.print(m_tiltTorque ? "ON" : "OFF");
+        if(m_tiltTorque)
+        {
+          Serial.print("ON");
+        }
+        else
+        {
+          Serial.print("OFF");
+        }
         Serial.print(" state=");
         Serial.println(stateName());
       }
@@ -425,9 +461,22 @@ void GimbalController::move(uint8_t id, float deg)
     return;
   }
 
-  bool calibrated = isPan ? m_panCal : m_tiltCal;
-  bool torqueOn = isPan ? m_panTorque : m_tiltTorque;
-  int32_t zero = isPan ? m_zeroPan : m_zeroTilt;
+  bool calibrated;
+  bool torqueOn;
+  int32_t zero;
+
+  if(isPan)
+  {
+    calibrated = m_panCal;
+    torqueOn = m_panTorque;
+    zero = m_zeroPan;
+  }
+  else
+  {
+    calibrated = m_tiltCal;
+    torqueOn = m_tiltTorque;
+    zero = m_zeroTilt;
+  }
 
   if(!calibrated)
   {
@@ -445,7 +494,16 @@ void GimbalController::move(uint8_t id, float deg)
     return;
   }
 
-  float limit = isPan ? MAX_SAFE_PAN_DEG : MAX_SAFE_TILT_DEG;
+  float limit;
+  if(isPan)
+  {
+    limit = MAX_SAFE_PAN_DEG;
+  }
+  else
+  {
+    limit = MAX_SAFE_TILT_DEG;
+  }
+
   float clampedDeg = clampFloat(deg, -limit, limit);
 
   if(clampedDeg != deg)
@@ -492,18 +550,46 @@ void GimbalController::statusAll()
   Serial.print(" zero=");
   Serial.print(m_zeroPan);
   Serial.print(" calibrated=");
-  Serial.print(m_panCal ? "YES" : "NO");
+  if(m_panCal)
+  {
+    Serial.print("YES");
+  }
+  else
+  {
+    Serial.print("NO");
+  }
   Serial.print(" torque=");
-  Serial.println(m_panTorque ? "ON" : "OFF");
+  if(m_panTorque)
+  {
+    Serial.println("ON");
+  }
+  else
+  {
+    Serial.println("OFF");
+  }
 
   Serial.print("TILT: raw=");
   Serial.print(tiltPos);
   Serial.print(" zero=");
   Serial.print(m_zeroTilt);
   Serial.print(" calibrated=");
-  Serial.print(m_tiltCal ? "YES" : "NO");
+  if(m_tiltCal)
+  {
+    Serial.print("YES");
+  }
+  else
+  {
+    Serial.print("NO");
+  }
   Serial.print(" torque=");
-  Serial.println(m_tiltTorque ? "ON" : "OFF");
+  if(m_tiltTorque)
+  {
+    Serial.println("ON");
+  }
+  else
+  {
+    Serial.println("OFF");
+  }
 }
 
 void GimbalController::startTest()
