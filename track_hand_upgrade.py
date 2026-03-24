@@ -1,5 +1,5 @@
 #!/home/layne/miniconda3/bin/python
-#pylint: disable=
+#pylint: disable=C0303,C0301
 
 import os
 import subprocess
@@ -44,16 +44,20 @@ HAND_CONNECTIONS = [
 
 # --- Helper Functions ---
 def dbg(msg):
+    """Print debug message if DEBUG enabled."""
     if DEBUG:
         print(f"[DEBUG {time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 def clamp(x, lo, hi):
+    """Clamp x to [lo, hi]."""
     return max(lo, min(hi, x))
 
 def free_serial_port(port):
+    """Kill processes using a serial port."""
     subprocess.run(["fuser", "-k", port], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def get_camera_node():
+    """Return matching /dev/videoX for camera, else fallback."""
     dbg("Searching for camera node with v4l2-ctl...")
     try:
         out = subprocess.check_output(["v4l2-ctl", "--list-devices"], text=True)
@@ -78,9 +82,11 @@ def get_camera_node():
     return None
 
 def send_cmd(ser, cmd):
+    """Send newline-terminated serial command."""
     ser.write((cmd + "\n").encode("utf-8"))
 
 def drain_serial(ser, seconds=0.25):
+    """Clear serial input buffer for a short duration."""
     end_time = time.time() + seconds
     while time.time() < end_time:
         try:
@@ -93,6 +99,7 @@ def drain_serial(ser, seconds=0.25):
             break
 
 def setup_motors_with_manual_calibration_window(ser):
+    """Disable torque, allow manual positioning, capture zero, re-enable."""
     dbg("Starting motor setup/calibration window")
     time.sleep(2.0)
     drain_serial(ser)
@@ -130,16 +137,19 @@ def setup_motors_with_manual_calibration_window(ser):
     print("\nCalibration captured.\nTracking is now active.\n")
 
 def send_positions(ser, pan_deg, tilt_deg):
+    """Send pan/tilt angles (deg) to motors."""
     send_cmd(ser, f"p {PAN_ID} {pan_deg:.2f}")
     send_cmd(ser, f"p {TILT_ID} {tilt_deg:.2f}")
 
 def get_palm_center_px(landmarks, w, h):
+    """Return palm center (x, y) in pixels."""
     palm_ids = [0, 5, 9, 13, 17]
     avg_x = sum(landmarks[i].x for i in palm_ids) / len(palm_ids)
     avg_y = sum(landmarks[i].y for i in palm_ids) / len(palm_ids)
     return int(avg_x * w), int(avg_y * h)
 
 def draw_tracking_ui(frame, center_x, center_y):
+    """Draw crosshair + hold box; return box bounds."""
     half_w, half_h = BOX_WIDTH // 2, BOX_HEIGHT // 2
     left, right = center_x - half_w, center_x + half_w
     top, bottom = center_y - half_h, center_y + half_h
@@ -156,6 +166,7 @@ def draw_tracking_ui(frame, center_x, center_y):
     return left, right, top, bottom
 
 def draw_hand(frame, landmarks, w, h):
+    """Draw hand landmarks and connections on frame."""
     for lm in landmarks:
         cv2.circle(frame, (int(lm.x * w), int(lm.y * h)), 3, (0, 255, 0), -1)
     for a, b in HAND_CONNECTIONS:
