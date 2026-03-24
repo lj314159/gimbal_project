@@ -6,14 +6,13 @@ import subprocess
 import sys
 import time
 import traceback
+import cv2
+import mediapipe as mp
+import serial
 
 # Fix broken/ugly OpenCV Qt GUI behavior from polluted environment vars.
 os.environ.pop("QT_PLUGIN_PATH", None)
 os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH", None)
-
-import cv2
-import mediapipe as mp
-import serial
 
 # --- Configuration & Constants ---
 CAMERA_NAME = "Arducam OV2311 USB Camera"
@@ -51,8 +50,8 @@ def dbg(msg):
 def clamp(x, lo, hi):
     return max(lo, min(hi, x))
 
-def free_serial_port():
-    subprocess.run(["fuser", "-k", SERIAL_PORT], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+def free_serial_port(port):
+    subprocess.run(["fuser", "-k", port], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def get_camera_node():
     dbg("Searching for camera node with v4l2-ctl...")
@@ -167,7 +166,7 @@ def draw_hand(frame, landmarks, w, h):
 # --- Main Logic ---
 def main():
     dbg("Program start")
-    free_serial_port()
+    free_serial_port(SERIAL_PORT)
 
     if not os.path.exists(MODEL_PATH):
         sys.exit(f"Model not found: {MODEL_PATH}")
