@@ -41,16 +41,20 @@ HAND_CONNECTIONS = [
 ]
 
 # --- Helper Functions ---
+# debug info
 def dbg(msg):
     if DEBUG:
         print(f"[DEBUG {time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
+# limits range
 def clamp(x, lo, hi):
     return max(lo, min(hi, x))
 
+# disconnects anything else from microcontroller such as arduino ide
 def free_serial_port():
     subprocess.run(["fuser", "-k", SERIAL_PORT], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+# gets camera device
 def get_camera_node():
     dbg("Searching for camera node with v4l2-ctl...")
     try:
@@ -75,9 +79,11 @@ def get_camera_node():
             return node
     return None
 
+# sends commands to microcontroller
 def send_cmd(ser, cmd):
     ser.write((cmd + "\n").encode("utf-8"))
 
+# cleanup
 def drain_serial(ser, seconds=0.25):
     end_time = time.time() + seconds
     while time.time() < end_time:
@@ -90,6 +96,7 @@ def drain_serial(ser, seconds=0.25):
         except Exception:
             break
 
+# initialize motors to be calibrated
 def setup_motors_with_manual_calibration_window(ser):
     dbg("Starting motor setup/calibration window")
     time.sleep(2.0)
@@ -129,16 +136,19 @@ def setup_motors_with_manual_calibration_window(ser):
     drain_serial(ser)
     print("\nCalibration captured.\nTracking is now active.\n")
 
+# wrapper to send commands to microcontroller
 def send_positions(ser, pan_deg, tilt_deg):
     send_cmd(ser, f"p {PAN_ID} {pan_deg:.2f}")
     send_cmd(ser, f"p {TILT_ID} {tilt_deg:.2f}")
 
+# calculate the centroid of palm
 def get_palm_center_px(landmarks, w, h):
     palm_ids = [0, 5, 9, 13, 17]
     avg_x = sum(landmarks[i].x for i in palm_ids) / len(palm_ids)
     avg_y = sum(landmarks[i].y for i in palm_ids) / len(palm_ids)
     return int(avg_x * w), int(avg_y * h)
 
+# draw the HUD text such as bounding box and tracking state
 def draw_tracking_ui(frame, center_x, center_y):
     half_w, half_h = BOX_WIDTH // 2, BOX_HEIGHT // 2
     left, right = center_x - half_w, center_x + half_w
@@ -155,6 +165,7 @@ def draw_tracking_ui(frame, center_x, center_y):
     
     return left, right, top, bottom
 
+# draws a stick model of hand
 def draw_hand(frame, landmarks, w, h):
     for lm in landmarks:
         cv2.circle(frame, (int(lm.x * w), int(lm.y * h)), 3, (0, 255, 0), -1)
