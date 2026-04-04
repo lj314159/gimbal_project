@@ -107,11 +107,13 @@ def setup_motors_with_manual_calibration_window(ser):
     end_time = time.time() + MANUAL_CALIBRATION_WINDOW_SEC
     last_shown = None
 
-    while (remaining := int(max(0, end_time - time.time() + 0.999))) > 0:
+    remaining = int(max(0, end_time - time.time() + 0.999))
+    while remaining > 0:
         if remaining != last_shown:
             print(f"Starting tracking in {remaining}...")
             last_shown = remaining
         time.sleep(0.05)
+        remaining = int(max(0, end_time - time.time() + 0.999))
 
     dbg("Capturing calibration positions and enabling motors")
     for motor_id in (PAN_ID, TILT_ID):
