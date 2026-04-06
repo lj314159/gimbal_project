@@ -42,6 +42,7 @@ To prevent unnecessary jitter and mechanical "hunting" during minor oscillations
 ![NVIDIA Jetson & OpenRB-150](image_gallery/jetson_and_openrb150.png)
 
 ### CAD Drawings Final Prototype
+##### Isometric View without yaw axis portion
 ![Final Gimbal 1](image_gallery/final_gimbal_1.png)
 ![Final Gimbal 2](image_gallery/final_gimbal_2.png)
 ![Final Gimbal 3](image_gallery/final_gimbal_3.png)
