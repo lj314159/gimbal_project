@@ -1,0 +1,57 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+
+top to bottom direction
+skinparam ranksep 60
+skinparam nodesep 40
+
+[*] --> STARTUP
+
+state STARTUP
+state WAITING_FOR_CALIBRATION
+state READY
+state RUNNING_TEST
+state ERROR_STATE
+
+note right of STARTUP
+Initial boot state
+Setup hardware / initialize controller
+end note
+
+note left of WAITING_FOR_CALIBRATION
+Waiting for user to set zero positions
+Calibration commands allowed
+end note
+
+note right of READY
+Normal operation
+Accepts movement commands
+end note
+
+note left of RUNNING_TEST
+Automated motion test sequence
+end note
+
+note right of ERROR_STATE
+Fault state
+Safe behavior only
+end note
+
+STARTUP --> WAITING_FOR_CALIBRATION : init complete
+STARTUP --> ERROR_STATE : initialization fault
+
+WAITING_FOR_CALIBRATION --> READY : calibration complete
+WAITING_FOR_CALIBRATION --> ERROR_STATE : calibration fault
+
+READY --> READY
+READY --> RUNNING_TEST : start test
+READY --> WAITING_FOR_CALIBRATION : recalibrate
+READY --> ERROR_STATE : fault detected
+
+RUNNING_TEST --> READY : test complete
+RUNNING_TEST --> ERROR_STATE : test fault
+RUNNING_TEST --> WAITING_FOR_CALIBRATION : cancel / recalibrate\nmove / tracking input
+
+ERROR_STATE --> WAITING_FOR_CALIBRATION : reset
+@enduml
