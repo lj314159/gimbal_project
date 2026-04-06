@@ -42,13 +42,13 @@ To prevent unnecessary jitter and mechanical "hunting" during minor oscillations
 ![NVIDIA Jetson & OpenRB-150](image_gallery/jetson_and_openrb150.png)
 
 ### CAD Drawings Final Prototype
-![Final Gimbal 1](final_gimbal_1.png)
-![Final Gimbal 2](final_gimbal_2.png)
-![Final Gimbal 3](final_gimbal_3.png)
+![Final Gimbal 1](image_gallery/final_gimbal_1.png)
+![Final Gimbal 2](image_gallery/final_gimbal_2.png)
+![Final Gimbal 3](image_gallery/final_gimbal_3.png)
 
 ### CAD Drawings Original Prototype
-![Original Gimbal 1](original_gimbal_1.png)
-![Original Gimbal 2](original_gimbal_2.png)
-![Original Gimbal 3](original_gimbal_3.png)
-![Original Gimbal 4](original_gimbal_4.png)
-![Original Gimbal 5](original_gimbal_5.png)
+![Original Gimbal 1](image_gallery/original_gimbal_1.png)
+![Original Gimbal 2](image_gallery/original_gimbal_2.png)
+![Original Gimbal 3](image_gallery/original_gimbal_3.png)
+![Original Gimbal 4](image_gallery/original_gimbal_4.png)
+![Original Gimbal 5](image_gallery/original_gimbal_5.png)
