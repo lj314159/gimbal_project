@@ -11,7 +11,7 @@ A hardware-software integrated pan-tilt gimbal designed to replace imprecise man
 ## System Architecture & State Machine
 The firmware utilizes a deterministic finite state machine to manage system behavior and safety:
 
-![State Diagram](state_diagram.png)
+![State Diagram](state_diagram/state_diagram.png)
 
 * **STARTUP:** Initial boot sequence handling hardware setup and controller initialization.
 * **WAITING_FOR_CALIBRATION:** Awaits user commands to establish the zero/home positions for the pan and tilt axes.
@@ -30,13 +30,13 @@ To prevent unnecessary jitter and mechanical "hunting" during minor oscillations
 ## Project Gallery
 
 ### Assembled Hardware
-![Front Isometric](front_isometric.jpg)
-![Top Down](top_down.jpg)
-![Bottom Isometric](bottom_isometric.jpg)
-![Folded Configuration](folded.jpg)
+![Front Isometric](image_gallery/front_isometric.png)
+![Top Down](image_gallery/top_down.png)
+![Bottom Isometric](image_gallery/bottom_isometric.png)
+![Folded Configuration](image_gallery/folded.png)
 
 ### Live Setup & Compute
-![Front Isometric Live](front_isometric_live.jpg)
-![Rear Isometric Live](rear_isometric_live.jpg)
-![Bottom View Live](bottom_live.jpg)
-![NVIDIA Jetson & OpenRB-150](jetson_and_openrb150.jpg)
+![Front Isometric Live](image_gallery/front_isometric_live.png)
+![Rear Isometric Live](image_gallery/rear_isometric_live.png)
+![Bottom View Live](image_gallery/bottom_live.png)
+![NVIDIA Jetson & OpenRB-150](image_gallery/jetson_and_openrb150.png)
