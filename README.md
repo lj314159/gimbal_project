@@ -41,15 +41,24 @@ To prevent unnecessary jitter and mechanical "hunting" during minor oscillations
 ![Bottom View Live](image_gallery/bottom_live.png)
 ![NVIDIA Jetson & OpenRB-150](image_gallery/jetson_and_openrb150.png)
 
-### CAD Drawings Final Prototype
-##### Isometric View without yaw axis portion
+## CAD Drawings Final Prototype
+#### The final iteration utilizes a 3-legged base with integrated housing for the Dynamixel actuators for stability and aesthet-ics
+###### Isometric View without yaw axis portion
 ![Final Gimbal 1](image_gallery/final_gimbal_1.png)
+###### Internal Axis: Housed Actuator Assembly
 ![Final Gimbal 2](image_gallery/final_gimbal_2.png)
+###### Main Chassis Plate: Leg Attachment Geometry
 ![Final Gimbal 3](image_gallery/final_gimbal_3.png)
 
-### CAD Drawings Original Prototype
+## CAD Drawings Original Prototype
+#### Initial proof-of-concept iteration focusing on component spacing, axis alignment, and basic structural stability
+###### Prototype Assembly: Initial Prototype Layout
 ![Original Gimbal 1](image_gallery/original_gimbal_1.png)
+###### Bottom View: Prototype Motor Mounting and Internal Housing
 ![Original Gimbal 2](image_gallery/original_gimbal_2.png)
-![Original Gimbal 3](image_gallery/original_gimbal_3.png)
+###### Exploded View: All Reference Geometry Stack (Front)
+![Original Gimbal 3](image_gallery/original_gimbal_5.png)
+###### Exploded View: All Reference Geometry Stack (Rear)
 ![Original Gimbal 4](image_gallery/original_gimbal_4.png)
-![Original Gimbal 5](image_gallery/original_gimbal_5.png)
+###### Axial Assembly: Component Alignment
+![Original Gimbal 5](image_gallery/original_gimbal_3.png)
