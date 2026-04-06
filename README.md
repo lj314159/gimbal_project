@@ -29,16 +29,22 @@ To prevent unnecessary jitter and mechanical "hunting" during minor oscillations
 
 ## Project Gallery
 
-### Assembled Hardware
+#### Assembled Hardware
+###### Front Isometric
 ![Front Isometric](image_gallery/front_isometric.png)
+###### Top Down
 ![Top Down](image_gallery/top_down.png)
+###### Bottom Isometric
 ![Bottom Isometric](image_gallery/bottom_isometric.png)
+###### Folded Configuration
 ![Folded Configuration](image_gallery/folded.png)
-
-### Live Setup & Compute
+###### Front Isometric Live
 ![Front Isometric Live](image_gallery/front_isometric_live.png)
+###### Rear Isometric Live
 ![Rear Isometric Live](image_gallery/rear_isometric_live.png)
+###### Bottom View Live
 ![Bottom View Live](image_gallery/bottom_live.png)
+###### NVIDIA Jetson & OpenRB-150
 ![NVIDIA Jetson & OpenRB-150](image_gallery/jetson_and_openrb150.png)
 
 ## CAD Drawings Final Prototype
