@@ -51,7 +51,7 @@ To prevent unnecessary jitter and mechanical "hunting" during minor oscillations
 ![NVIDIA Jetson & OpenRB-150](image_gallery/jetson_and_openrb150.png)
 
 ## CAD Drawings Final Prototype
-#### The final iteration utilizes a 3-legged base with integrated housing for the Dynamixel actuators for stability and aesthet-ics
+#### The final iteration utilizes a 3-legged base with integrated housing for the Dynamixel actuators for stability and aesthetics
 ###### Isometric View without yaw axis portion
 ![Final Gimbal 1](image_gallery/final_gimbal_1.png)
 ###### Internal Axis: Housed Actuator Assembly
