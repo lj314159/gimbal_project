@@ -29,7 +29,7 @@ To prevent unnecessary jitter and mechanical "hunting" during minor oscillations
 
 ## Project Gallery
 
-#### Live Test Demo
+#### Live Test Demo Video(click):
 [![Watch the demo](https://img.youtube.com/vi/CTpUV5WMqHE/0.jpg)](https://www.youtube.com/watch?v=CTpUV5WMqHE)
 
 #### Assembled Hardware
